@@ -1,0 +1,11 @@
+Settings
+{
+	windowX = 240
+	windowY = 200
+	enableRangeSafety = True
+	terminatThrustOnArm = True
+	abortOnArm = True
+	delay3secOnArm = True
+	destructOnArm = True
+	destroyOnDestruct = True
+}

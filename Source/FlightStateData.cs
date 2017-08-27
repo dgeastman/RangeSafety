@@ -10,8 +10,8 @@ namespace RangeSafety
     {
         public double Lattitude { get; set; }
         public double Longitude { get; set; }
-        public float VesselTotalMass { get; set; }
-        public float VesselHeightAboveSurface { get; set; }
-        public float VesselSurfaceSpeed { get; set; }
+        public double VesselTotalMass { get; set; }
+        public double VesselHeightAboveSurface { get; set; }
+        public double VesselSurfaceSpeed { get; set; }
     }
 }

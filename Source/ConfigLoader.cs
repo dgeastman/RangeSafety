@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using KSP.IO;
-using File = KSP.IO.File;
 using UnityEngine;
 
 namespace RangeSafety
@@ -14,16 +8,14 @@ namespace RangeSafety
         ConfigNode global = new ConfigNode("RangeSafetyConfig");
         public void Load()
         {
-            if (File.Exists<RangeSafety>("flightcorridors.cfg"))
+            try
             {
-                try
-                {
-                    global = ConfigNode.Load(IOUtils.GetFilePathFor(this.GetType(), "flightcorridors.cfg"));                   
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("ConfigLoader.Load caught an exception trying to load flightcorridors.cfg: " + e);
-                }
+                var path = string.Format("{0}GameData/RangeSafety/FlightCorridors.cfg", KSPUtil.ApplicationRootPath);
+                global = ConfigNode.Load(path);                   
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("ConfigLoader.Load caught an exception trying to load FlightCorridors.cfg: " + e);
             }
         }
 
@@ -33,24 +25,31 @@ namespace RangeSafety
             
             ConfigNode result = null;
             ConfigNode corridorsNode = null;
-            if (global.TryGetNode("FlightCorridors", ref corridorsNode))
+            ConfigNode tempNode = null;
+
+            if (global.TryGetNode("RANGESAFETY", ref tempNode))
             {
-                for (int i = 0; i < corridorsNode.nodes.Count; i++)
+                if (tempNode.TryGetNode("FlightCorridors", ref corridorsNode))
                 {
-                    ConfigNode testNode = corridorsNode.nodes[i];
-                    double lat =0, lon=0;
-                    if (!testNode.TryGetValue("latitude", ref lat))
+                    for (int i = 0; i < corridorsNode.nodes.Count; i++)
                     {
-                        break;
-                    }
-                    if (!testNode.TryGetValue("longitude", ref lon))
-                    {
-                        break;
-                    }
-                    if (Utils.DistanceBetween(FlightGlobals.ActiveVessel.latitude, FlightGlobals.ActiveVessel.longitude, lat, lon) <= 1500)
-                    {
-                        result = testNode;
-                        break;
+                        ConfigNode testNode = corridorsNode.nodes[i];
+                        double lat = 0, lon = 0;
+                        if (!testNode.TryGetValue("latitude", ref lat))
+                        {
+                            break;
+                        }
+                        if (!testNode.TryGetValue("longitude", ref lon))
+                        {
+                            break;
+                        }
+                        var vesselCoords = new Coordinates(FlightGlobals.ActiveVessel.latitude, FlightGlobals.ActiveVessel.longitude);
+                        var padCoords = new Coordinates(lat, lon);
+                        if (vesselCoords.DistanceTo(padCoords) <= 1500)
+                        {
+                            result = testNode;
+                            break;
+                        }
                     }
                 }
             }

@@ -1,22 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace RangeSafety
 {
+    public enum RangeState
+    {
+        Disarmed = 0,
+        Nominal = 1,
+        Armed = 2,
+        Destruct = 3
+    }
+
     [Flags]
     public enum FlightStatus : uint
     {
         Nominal             = 0x000,
-        SafeMass            = 0x001,
-        SafeSpeed           = 0x002,
-        SafeRange           = 0x004,
-        NominalPadExclusion = 0x008,
-        NominalInCorridor   = 0x010,
-        CorridorViolation   = 0x020
+        Prelaunch           = 0x001,
+        SafeMass            = 0x002,
+        SafeSpeed           = 0x004,
+        SafeRange           = 0x008,
+        NominalPadExclusion = 0x010,
+        NominalInCorridor   = 0x020,
+        CorridorViolation   = 0x040,
+        Disarmed            = 0x100
     }
 
     public interface IFlightCorridor
@@ -27,13 +32,15 @@ namespace RangeSafety
         EditableInt SafeSpeed { get; set; }
         EditableInt SafeMass { get; set; }
         EditableInt PadSafetyRadius { get; set; }
-
-        FlightStatus Status(FlightStateData flightState);
+        FlightStatus Status { get; set; }
+        RangeState State { get; set; }
+        Settings SystemSettings { get; set; }
+        void CheckStatus(FlightStateData flightState);
 
         void DrawEditor();
     }
 
-    public virtual class FlightCorridorBase : IFlightCorridor
+    public class FlightCorridorBase : IFlightCorridor
     {
         public string Name { get; set; }
         public Coordinates PadCoordinates { get; set; }
@@ -41,79 +48,107 @@ namespace RangeSafety
         public EditableInt SafeSpeed { get; set; }
         public EditableInt SafeMass { get; set; }
         public EditableInt PadSafetyRadius { get; set; }
+        public FlightStatus Status { get; set; }
+        public RangeState State { get; set; }
+        public Settings SystemSettings { get; set; }
 
         public static IFlightCorridor InstantiateFromConfig(ConfigNode configNode)
         {
+            if (configNode == null)
+                return null;
+
+            FlightCorridorBase instance = null;
             if (configNode.HasNode("Inclination"))
             {
-                return FlightCorridorInclinations.InstantiateFromConfig(configNode);
+                instance = new FlightCorridorInclinations();
             }
             else 
             {
-                var instance = new FlightCorridorBase();
-                instance.ParseFromConfig(configNode);
-                return instance;
+                instance = new FlightCorridorBase();
             }
+            instance.ParseFromConfig(configNode);
+            return instance;
         }
 
-        public virtual FlightStatus Status(FlightStateData flightState)
+        public virtual void CheckStatus(FlightStateData flightState)
         {
+            if (!SystemSettings.enableRangeSafety)
+            {
+                Status = FlightStatus.Disarmed;
+                State = RangeState.Disarmed;
+                return;
+            }
+
+            State = RangeState.Nominal;
+
+            if (flightState == null)
+            {
+                Status = FlightStatus.Prelaunch;
+                return;
+            }
+
             FlightStatus result = FlightStatus.Nominal;
 
             result |= CheckVehicleMass(flightState);
             result |= CheckVehicleVelocity(flightState);
-            return result;
+            result |= CheckVehicleDistanceFromPad(flightState);
+            if ((result & FlightStatus.NominalPadExclusion) != FlightStatus.NominalPadExclusion)
+            {
+                // only check bearing once we leave the exlcusion radius to avoid spurious short distance variatons
+                result |= CheckCorridor(flightState);
+            }
+
+            Status = result;
         }
 
         public virtual void DrawEditor()
         {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Safe Distance (km)", HighLogic.Skin.label);
-            GUILayout.TextField("1000");
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Safe Altitude (km)", HighLogic.Skin.label);
-            GUILayout.TextField("50000");
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Safe Velocity (m/sec)", HighLogic.Skin.label);
-            GUILayout.TextField("4000");
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Safe Mass (tons)", HighLogic.Skin.label);
-            GUILayout.TextField("10");
-
-            GUILayout.EndHorizontal();
-
+            GUIUtils.SimpleLabel("Range Name", Name);
+            GUIUtils.SimpleTextBox("Safe Range", SafeRange, "km");
+            GUIUtils.SimpleTextBox("Safe Velocity ", SafeSpeed, "m/sec");
+            GUIUtils.SimpleTextBox("Safe Mass", SafeMass, "tons");
+            GUIUtils.SimpleTextBox("Pad Exclusion Radius", PadSafetyRadius, "km");
         }
 
-        protected virtual bool IsInCorridor(FlightStateData flightState)
+        protected virtual FlightStatus CheckCorridor(FlightStateData flightState)
         {
-            return true;
+            return FlightStatus.NominalInCorridor;
         }
 
         protected FlightStatus CheckVehicleMass(FlightStateData flightState)
         {
-            return flightState.VesselTotalMass <= SafeMass ? FlightStatus.SafeMass : FlightStatus.Nominal;
+            if (flightState.VesselTotalMass <= SafeMass)
+            {
+                State = RangeState.Disarmed;
+                return FlightStatus.SafeMass;
+            }
+            return FlightStatus.Nominal;
         }
 
         protected FlightStatus CheckVehicleVelocity(FlightStateData flightState)
         {
-            return flightState.VesselSurfaceSpeed >= SafeSpeed ? FlightStatus.SafeSpeed : FlightStatus.Nominal;
+            if (flightState.VesselSurfaceSpeed >= SafeSpeed)
+            {
+                State = RangeState.Disarmed;
+                return FlightStatus.SafeSpeed;
+            }
+            return FlightStatus.Nominal;
         }
 
         protected FlightStatus CheckVehicleDistanceFromPad(FlightStateData flightState)
         {
             FlightStatus result = FlightStatus.Nominal;
 
-            var distFromPad = Utils.DistanceBetween(PadCoordinates.latitude, PadCoordinates.longitude, flightState.Lattitude, flightState.Longitude);           
+            var vesselCoords = new Coordinates(flightState.Lattitude, flightState.Longitude);
+
+            var distFromPad = vesselCoords.DistanceTo(PadCoordinates);          
             if (distFromPad <= PadSafetyRadius)
             {
                 result |= FlightStatus.NominalPadExclusion;
             } 
             else if (distFromPad >= SafeRange)
             {
+                State = RangeState.Disarmed;
                 result |= FlightStatus.SafeRange;
             }
             return result;
@@ -162,13 +197,6 @@ namespace RangeSafety
         public EditableDouble MaximumInclination { get; set; }
         public EditableDouble MinimumVerticalInclination { get; set; }
 
-        public static IFlightCorridor InstantiateFromConfig(ConfigNode configNode)
-        {
-            var instance = new FlightCorridorInclinations();
-            instance.ParseFromConfig(configNode);
-            return instance;
-        }
-
         public override void DrawEditor()
         {
             base.DrawEditor();
@@ -178,9 +206,18 @@ namespace RangeSafety
             GUIUtils.SimpleTextBox("Minimum Climb", MinimumVerticalInclination, "°");
         }
 
-        protected override bool IsInCorridor(FlightStateData flightState)
+        protected override FlightStatus CheckCorridor(FlightStateData flightState)
         {
-            bool result = base.IsInCorridor(flightState);
+            FlightStatus result = base.CheckCorridor(flightState);
+
+            var vesselCoords = new Coordinates(flightState.Lattitude, flightState.Longitude);
+
+            var bearing = PadCoordinates.BearingTo(vesselCoords);
+            if (bearing > MaximumInclination.val || bearing < MinimumInclination.val)
+            {
+                result = FlightStatus.CorridorViolation;
+                State = RangeState.Armed;
+            }
             return result;
         }
 

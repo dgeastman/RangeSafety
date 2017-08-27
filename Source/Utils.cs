@@ -1,6 +1,4 @@
-﻿using System.Device.Location;
-
-namespace RangeSafety
+﻿namespace RangeSafety
 {
     public static class Utils
     {
@@ -18,13 +16,6 @@ namespace RangeSafety
             angle = ClampDegrees360(angle);
             if (angle > 180) angle -= 360;
             return angle;
-        }
-
-        public static double DistanceBetween(double lat1, double lon1, double lat2, double lon2)
-        {
-            var coord1 = new GeoCoordinate(lat1, lon1);
-            var coord2 = new GeoCoordinate(lat2, lon2);
-            return coord1.GetDistanceTo(coord2);
         }
     }
 }

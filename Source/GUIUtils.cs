@@ -82,7 +82,7 @@ namespace RangeSafety
 
         public EditableDouble(double val)
         {
-            _val = val;
+            this.val = val;
         }
 
         public static implicit operator EditableDouble(double x)
