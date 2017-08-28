@@ -32,11 +32,12 @@ namespace RangeSafety
         EditableInt SafeSpeed { get; set; }
         EditableInt SafeMass { get; set; }
         EditableInt PadSafetyRadius { get; set; }
-        FlightStatus Status { get; set; }
+        FlightStatus Status { get; }
+        String StatusDescription { get; }
         RangeState State { get; set; }
         Settings SystemSettings { get; set; }
         void CheckStatus(FlightStateData flightState);
-
+        void SetRangeStateDescription();
         void DrawEditor();
     }
 
@@ -48,7 +49,8 @@ namespace RangeSafety
         public EditableInt SafeSpeed { get; set; }
         public EditableInt SafeMass { get; set; }
         public EditableInt PadSafetyRadius { get; set; }
-        public FlightStatus Status { get; set; }
+        public FlightStatus Status { get; protected set; }
+        public String StatusDescription { get; protected set; }
         public RangeState State { get; set; }
         public Settings SystemSettings { get; set; }
 
@@ -79,6 +81,12 @@ namespace RangeSafety
                 return;
             }
 
+            if (State == RangeState.Armed || State == RangeState.Destruct)
+            {
+                // once we've entered the armed or destruct state, there is no going back
+                return;
+            }
+
             State = RangeState.Nominal;
 
             if (flightState == null)
@@ -99,6 +107,44 @@ namespace RangeSafety
             }
 
             Status = result;
+        }
+        public void SetRangeStateDescription()
+        {
+            string description = string.Empty;
+
+            if ((Status & FlightStatus.Disarmed) == FlightStatus.Disarmed)
+            {
+                description = "";
+            }
+            else if ((Status & FlightStatus.Prelaunch) == FlightStatus.Prelaunch)
+            {
+                description = "Awaiting launch";
+            }
+            else if ((Status & FlightStatus.SafeMass) == FlightStatus.SafeMass)
+            {
+                description = "Vessel reached safe mass";
+            }
+            else if ((Status & FlightStatus.SafeRange) == FlightStatus.SafeRange)
+            {
+                description = "Vessel reached safe range";
+            }
+            else if ((Status & FlightStatus.SafeSpeed) == FlightStatus.SafeSpeed)
+            {
+                description = "Vessel reached safe speed";
+            }
+            else if ((Status & FlightStatus.NominalPadExclusion) == FlightStatus.NominalPadExclusion)
+            {
+                description = "Over launch facility";
+            }
+            else if ((Status & FlightStatus.NominalInCorridor) == FlightStatus.NominalInCorridor)
+            {
+                description = "On course";
+            }
+            else if ((Status & FlightStatus.CorridorViolation) == FlightStatus.CorridorViolation)
+            {
+                description = "Departed flight corridor!";
+            }
+            StatusDescription = description;
         }
 
         public virtual void DrawEditor()
@@ -189,6 +235,7 @@ namespace RangeSafety
                 this.PadSafetyRadius = valueInt;
             }
         }
+
     }
 
     public class FlightCorridorInclinations : FlightCorridorBase

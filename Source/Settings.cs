@@ -9,9 +9,10 @@ namespace RangeSafety
     public class Settings
     {
         public bool terminatThrustOnArm;
+        public bool coastToApogeeBeforeAbort;
         public bool abortOnArm;
-        public bool delay3secOnArm;
-        public bool destructOnArm;
+        public bool delay3secAfterAbort;
+        public bool destructAfterAbort;
         public bool destroyOnDestruct;
         public bool enableRangeSafety;
         public float windowX;

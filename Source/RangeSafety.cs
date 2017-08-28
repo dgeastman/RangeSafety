@@ -14,6 +14,10 @@ namespace RangeSafety
         private ConfigNode rangeConfig = null;
         private IFlightCorridor flightCorridor = null;
         private RangeState currentRangeState = RangeState.Disarmed;
+        private double? armedMET;
+        private double? destructMET;
+        private double? abortMET;
+        private double? destroyMET;
 
         protected void Awake()
         {
@@ -39,6 +43,7 @@ namespace RangeSafety
 
             configWindow.LoadSettings();
             flightCorridor.SystemSettings = configWindow.settings;
+            flightCorridor.SetRangeStateDescription();
         }
 
         private void ShowWindow()
@@ -99,10 +104,13 @@ namespace RangeSafety
 
             if (flightState == null)
             {
+                flightCorridor.SetRangeStateDescription();
                 return;
             }
 
             flightCorridor.CheckStatus(flightState);
+            flightCorridor.SetRangeStateDescription();
+
             if (currentRangeState != flightCorridor.State)
             {
                 if (flightCorridor.State == RangeState.Armed)
@@ -113,9 +121,22 @@ namespace RangeSafety
                 {
                     PerformDestructActions();
                 }
-                else
+                currentRangeState = flightCorridor.State;
+            }
+            else if (currentRangeState == RangeState.Armed)
+            {
+                if (abortMET.HasValue && abortMET.Value <= FlightGlobals.ActiveVessel.missionTime)
                 {
-                    currentRangeState = flightCorridor.State;
+                    abortMET = null;
+                    ExecuteAbortAction();
+                }
+
+                if (destroyMET.HasValue && destroyMET.Value <= FlightGlobals.ActiveVessel.missionTime)
+                {
+                    destroyMET = null;
+                    flightCorridor.State = RangeState.Destruct;
+                    currentRangeState = RangeState.Destruct;
+                    PerformDestructActions();
                 }
             }
         }
@@ -142,10 +163,63 @@ namespace RangeSafety
 
         private void PerformArmActions()
         {
+            if (!armedMET.HasValue)
+            {
+                armedMET = FlightGlobals.ActiveVessel.missionTime;
+                FlightLogger.eventLog.Add(string.Format("[{0}]: Range safety entered ARM state: {1}", KSPUtil.PrintTimeCompact((int)Math.Floor(armedMET.Value), false), flightCorridor.StatusDescription));
+
+                if (configWindow.settings.terminatThrustOnArm)
+                {
+                    ExecuteDisableThrustAction();
+                }
+                if (configWindow.settings.abortOnArm)
+                {
+                    abortMET = FlightGlobals.ActiveVessel.missionTime + 0.5;
+                }
+                if (configWindow.settings.delay3secAfterAbort)
+                {
+                    destroyMET = FlightGlobals.ActiveVessel.missionTime + 3.5;
+                }
+            }
         }
 
         private void PerformDestructActions()
         {
+            if (!destructMET.HasValue)
+            {
+                destructMET = FlightGlobals.ActiveVessel.missionTime;
+                if (configWindow.settings.destroyOnDestruct)
+                {
+                    ExecuteDestroyAction();
+                }
+            }
+        }
+
+        private void ExecuteDisableThrustAction()
+        {
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                FlightGlobals.ActiveVessel.ctrlState.mainThrottle = 0;
+                FlightInputHandler.state.mainThrottle = 0; //so that the on-screen throttle gauge reflects the autopilot throttle
+            }
+        }
+
+        private void ExecuteAbortAction()
+        {
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                FlightLogger.eventLog.Add(string.Format("[{0}]: ABORT triggered by range safety.", KSPUtil.PrintTimeCompact((int)Math.Floor(FlightGlobals.ActiveVessel.missionTime), false)));
+                FlightGlobals.ActiveVessel.ActionGroups.ToggleGroup(KSPActionGroup.Abort);
+            }
+        }
+
+        private void ExecuteDestroyAction()
+        {
+            if (FlightGlobals.ActiveVessel != null)
+            {
+                FlightLogger.eventLog.Add(string.Format("[{0}]: Craft destroyed by range safety.", KSPUtil.PrintTimeCompact((int)Math.Floor(FlightGlobals.ActiveVessel.missionTime), false)));
+                FlightGlobals.ActiveVessel.Die();
+            }
         }
     }
 }

@@ -4,8 +4,9 @@ Settings
 	windowY = 200
 	enableRangeSafety = True
 	terminatThrustOnArm = True
+	coastToApogeeBeforeAbort = True
 	abortOnArm = True
-	delay3secOnArm = True
-	destructOnArm = True
+	delay3secAfterAbort = True
+	destructAfterAbort = True
 	destroyOnDestruct = True
 }

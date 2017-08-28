@@ -86,9 +86,10 @@ namespace RangeSafety
                 settings.windowY = float.Parse(settingsNode.GetValue("windowY"));
                 settings.enableRangeSafety = bool.Parse(settingsNode.GetValue("enableRangeSafety"));
                 settings.terminatThrustOnArm = bool.Parse(settingsNode.GetValue("terminatThrustOnArm"));
+                settings.coastToApogeeBeforeAbort = bool.Parse(settingsNode.GetValue("coastToApogeeBeforeAbort"));
                 settings.abortOnArm = bool.Parse(settingsNode.GetValue("abortOnArm"));
-                settings.delay3secOnArm = bool.Parse(settingsNode.GetValue("delay3secOnArm"));
-                settings.destructOnArm = bool.Parse(settingsNode.GetValue("destructOnArm"));
+                settings.delay3secAfterAbort = bool.Parse(settingsNode.GetValue("delay3secAfterAbort"));
+                settings.destructAfterAbort = bool.Parse(settingsNode.GetValue("destructAfterAbort"));
                 settings.destroyOnDestruct = bool.Parse(settingsNode.GetValue("destroyOnDestruct"));
             }
             catch (Exception e)
@@ -99,8 +100,8 @@ namespace RangeSafety
                 settings.enableRangeSafety = true;
                 settings.terminatThrustOnArm = true;
                 settings.abortOnArm = true;
-                settings.delay3secOnArm = true;
-                settings.destructOnArm = true;
+                settings.delay3secAfterAbort = true;
+                settings.destructAfterAbort = true;
                 settings.destroyOnDestruct = true;
             }
             windowPos.x = settings.windowX;
@@ -118,9 +119,10 @@ namespace RangeSafety
                 settingsNode.AddValue("windowY", settings.windowY);
                 settingsNode.AddValue("enableRangeSafety", settings.enableRangeSafety);
                 settingsNode.AddValue("terminatThrustOnArm", settings.terminatThrustOnArm);
+                settingsNode.AddValue("coastToApogeeBeforeAbort", settings.coastToApogeeBeforeAbort);
                 settingsNode.AddValue("abortOnArm", settings.abortOnArm);
-                settingsNode.AddValue("delay3secOnArm", settings.delay3secOnArm);
-                settingsNode.AddValue("destructOnArm", settings.destructOnArm);
+                settingsNode.AddValue("delay3secAfterAbort", settings.delay3secAfterAbort);
+                settingsNode.AddValue("destructAfterAbort", settings.destructAfterAbort);
                 settingsNode.AddValue("destroyOnDestruct", settings.destroyOnDestruct);
 
                 root.Save(path);
@@ -146,15 +148,19 @@ namespace RangeSafety
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
+            settings.abortOnArm = GUILayout.Toggle(settings.coastToApogeeBeforeAbort, "Coast to Apogee");
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             settings.abortOnArm = GUILayout.Toggle(settings.abortOnArm, "Abort");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            settings.delay3secOnArm = GUILayout.Toggle(settings.delay3secOnArm, "Delay 3000ms");
+            settings.delay3secAfterAbort = GUILayout.Toggle(settings.delay3secAfterAbort, "Delay 3 seconds");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            settings.destructOnArm = GUILayout.Toggle(settings.destructOnArm, "DESTRUCT");
+            settings.destructAfterAbort = GUILayout.Toggle(settings.destructAfterAbort, "DESTRUCT");
             GUILayout.EndHorizontal();
         }
 
@@ -190,38 +196,7 @@ namespace RangeSafety
                         state = "DESTRUCT";
                         break;
                 }
-                if ((FlightCorridor.Status & FlightStatus.Disarmed) == FlightStatus.Disarmed)
-                {
-                    description = "";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.Prelaunch) == FlightStatus.Prelaunch)
-                {
-                    description = "Awaiting launch";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.SafeMass) == FlightStatus.SafeMass)
-                {
-                    description = "Vessel reached safe mass";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.SafeRange) == FlightStatus.SafeRange)
-                {
-                    description = "Vessel reached safe range";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.SafeSpeed) == FlightStatus.SafeSpeed)
-                {
-                    description = "Vessel reached safe speed";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.NominalPadExclusion) == FlightStatus.NominalPadExclusion)
-                {
-                    description = "Over launch facility";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.NominalInCorridor) == FlightStatus.NominalInCorridor)
-                {
-                    description = "On course";
-                }
-                else if ((FlightCorridor.Status & FlightStatus.CorridorViolation) == FlightStatus.CorridorViolation)
-                {
-                    description = "Departed flight corridor!";
-                }
+                description = FlightCorridor.StatusDescription;
             }
             return string.Format("{0}: {1}", state, description);
         }
