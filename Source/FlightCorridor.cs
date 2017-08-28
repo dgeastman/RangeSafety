@@ -7,7 +7,8 @@ namespace RangeSafety
         Disarmed = 0,
         Nominal = 1,
         Armed = 2,
-        Destruct = 3
+        Destruct = 3,
+        Exempt =4
     }
 
     [Flags]
@@ -87,6 +88,11 @@ namespace RangeSafety
                 return;
             }
 
+            if (State == RangeState.Exempt)
+            {
+                Status = FlightStatus.Disarmed;
+                return;
+            }
             State = RangeState.Nominal;
 
             if (flightState == null)

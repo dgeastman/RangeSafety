@@ -71,10 +71,10 @@ namespace RangeSafety
 
         public static double BearingTo(this Coordinates baseCoordinates, Coordinates targetCoordinates)
         {
-            double long1 = DegreeToRadian(baseCoordinates.longitude);
-            double long2 = DegreeToRadian(targetCoordinates.longitude);
-            double lat1 = DegreeToRadian(baseCoordinates.latitude);
-            double lat2 = DegreeToRadian(targetCoordinates.latitude);
+            double long1 = Utils.DegreeToRadian(baseCoordinates.longitude);
+            double long2 = Utils.DegreeToRadian(targetCoordinates.longitude);
+            double lat1 = Utils.DegreeToRadian(baseCoordinates.latitude);
+            double lat2 = Utils.DegreeToRadian(targetCoordinates.latitude);
             double dLon = (long2 - long1);
 
             double y = Math.Sin(dLon) * Math.Cos(lat2);
@@ -83,18 +83,10 @@ namespace RangeSafety
 
             double brng = Math.Atan2(y, x);
 
-            brng = RadianToDegree(brng);
+            brng = Utils.RadianToDegree(brng);
             brng = (brng + 360) % 360;
 
             return brng;
-        }
-        private static double DegreeToRadian(double angle)
-        {
-            return Math.PI * angle / 180.0;
-        }
-        private static double RadianToDegree(double angle)
-        {
-            return angle * (180.0 / Math.PI);
         }
     }
 }

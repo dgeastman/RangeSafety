@@ -18,6 +18,7 @@ namespace RangeSafety
         private double? destructMET;
         private double? abortMET;
         private double? destroyMET;
+        private bool coastingToAp;
 
         protected void Awake()
         {
@@ -44,6 +45,17 @@ namespace RangeSafety
             configWindow.LoadSettings();
             flightCorridor.SystemSettings = configWindow.settings;
             flightCorridor.SetRangeStateDescription();
+        }
+
+        private void CheckIfRunwayOrLaunchPad()
+        {
+            var vessel = FlightGlobals.ActiveVessel;
+
+            var biome = FlightGlobals.currentMainBody.BiomeMap.GetAtt(Utils.DegreeToRadian(vessel.latitude), Utils.DegreeToRadian(vessel.longitude)).name;
+            if (biome == "Runway")
+            {
+                flightCorridor.State = RangeState.Exempt;
+            }
         }
 
         private void ShowWindow()
@@ -100,6 +112,11 @@ namespace RangeSafety
 
         protected void FixedUpdate()
         {
+            if (!configWindow.settings.enableRangeSafety || flightCorridor.State == RangeState.Exempt)
+            {
+                return;
+            }
+
             var flightState = GetFlightState();
 
             if (flightState == null)
@@ -125,18 +142,29 @@ namespace RangeSafety
             }
             else if (currentRangeState == RangeState.Armed)
             {
-                if (abortMET.HasValue && abortMET.Value <= FlightGlobals.ActiveVessel.missionTime)
+                if (coastingToAp)
                 {
-                    abortMET = null;
-                    ExecuteAbortAction();
+                    if (FlightGlobals.ActiveVessel.orbit.timeToAp > FlightGlobals.ActiveVessel.orbit.timeToPe)
+                    {
+                        coastingToAp = false;
+                        PerformPostCoastArmActions();
+                    }
                 }
-
-                if (destroyMET.HasValue && destroyMET.Value <= FlightGlobals.ActiveVessel.missionTime)
+                else
                 {
-                    destroyMET = null;
-                    flightCorridor.State = RangeState.Destruct;
-                    currentRangeState = RangeState.Destruct;
-                    PerformDestructActions();
+                    if (abortMET.HasValue && abortMET.Value <= FlightGlobals.ActiveVessel.missionTime)
+                    {
+                        abortMET = null;
+                        ExecuteAbortAction();
+                    }
+
+                    if (destroyMET.HasValue && destroyMET.Value <= FlightGlobals.ActiveVessel.missionTime)
+                    {
+                        destroyMET = null;
+                        flightCorridor.State = RangeState.Destruct;
+                        currentRangeState = RangeState.Destruct;
+                        PerformDestructActions();
+                    }
                 }
             }
         }
@@ -172,14 +200,26 @@ namespace RangeSafety
                 {
                     ExecuteDisableThrustAction();
                 }
-                if (configWindow.settings.abortOnArm)
+                if (configWindow.settings.coastToApogeeBeforeAbort)
                 {
-                    abortMET = FlightGlobals.ActiveVessel.missionTime + 0.5;
+                    if (FlightGlobals.ActiveVessel.orbit.timeToAp < FlightGlobals.ActiveVessel.orbit.timeToPe)
+                    {
+                        coastingToAp = true;
+                    }
                 }
-                if (configWindow.settings.delay3secAfterAbort)
-                {
-                    destroyMET = FlightGlobals.ActiveVessel.missionTime + 3.5;
-                }
+                PerformPostCoastArmActions();
+            }
+        }
+
+        private void PerformPostCoastArmActions()
+        {
+            if (!coastingToAp && configWindow.settings.abortOnArm)
+            {
+                abortMET = FlightGlobals.ActiveVessel.missionTime + 0.5;
+            }
+            if (!coastingToAp && configWindow.settings.delay3secAfterAbort)
+            {
+                destroyMET = FlightGlobals.ActiveVessel.missionTime + 3.5;
             }
         }
 
@@ -202,6 +242,11 @@ namespace RangeSafety
                 FlightGlobals.ActiveVessel.ctrlState.mainThrottle = 0;
                 FlightInputHandler.state.mainThrottle = 0; //so that the on-screen throttle gauge reflects the autopilot throttle
             }
+        }
+
+        private void ExecuteCoastToApAction()
+        {
+            coastingToAp = true;
         }
 
         private void ExecuteAbortAction()

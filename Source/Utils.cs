@@ -1,4 +1,6 @@
-﻿namespace RangeSafety
+﻿using System;
+
+namespace RangeSafety
 {
     public static class Utils
     {
@@ -16,6 +18,16 @@
             angle = ClampDegrees360(angle);
             if (angle > 180) angle -= 360;
             return angle;
+        }
+
+        public static double DegreeToRadian(double angle)
+        {
+            return Math.PI * angle / 180.0;
+        }
+
+        public static double RadianToDegree(double angle)
+        {
+            return angle * (180.0 / Math.PI);
         }
     }
 }
