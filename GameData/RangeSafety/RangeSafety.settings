@@ -7,6 +7,5 @@ Settings
 	coastToApogeeBeforeAbort = True
 	abortOnArm = True
 	delay3secAfterAbort = True
-	destructAfterAbort = True
-	destroyOnDestruct = True
+	destroyLaunchVehicle = True
 }

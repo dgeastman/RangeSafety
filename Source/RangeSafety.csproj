@@ -55,10 +55,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigLoader.cs" />
-    <Compile Include="ConfigWindow.cs" />
+    <Compile Include="FlightSceneWindow.cs" />
     <Compile Include="Coordinates.cs" />
-    <Compile Include="FlightCorridor.cs" />
+    <Compile Include="FlightCorridorInclinations.cs" />
+    <Compile Include="FlightCorridorBase.cs" />
+    <Compile Include="FlightRange.cs" />
     <Compile Include="FlightStateData.cs" />
     <Compile Include="GUIUtils.cs" />
     <Compile Include="RangeSafety.cs" />

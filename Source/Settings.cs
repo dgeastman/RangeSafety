@@ -1,21 +1,92 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using UnityEngine;
 
 namespace RangeSafety
 {
-    public class Settings
+    internal class Settings
     {
-        public bool terminatThrustOnArm;
-        public bool coastToApogeeBeforeAbort;
-        public bool abortOnArm;
-        public bool delay3secAfterAbort;
-        public bool destructAfterAbort;
-        public bool destroyOnDestruct;
-        public bool enableRangeSafety;
-        public float windowX;
-        public float windowY;
+        internal bool terminatThrustOnArm;
+        internal bool coastToApogeeBeforeAbort;
+        internal bool abortOnArm;
+        internal bool delay3secAfterAbort;
+        internal bool destroyLaunchVehicle;
+        internal bool enableRangeSafety;
+        internal float windowX;
+        internal float windowY;
+
+        internal static Settings InstantiateFromConfig()
+        {
+            Settings result = null;
+            try
+            {
+                var path = string.Format("{0}GameData/RangeSafety/RangeSafety.settings", KSPUtil.ApplicationRootPath);
+                var rootNode = ConfigNode.Load(path);
+                if (rootNode != null)
+                {
+                    var settingsNode = rootNode.GetNode("Settings");
+                    if (settingsNode != null)
+                    {
+                        result = new Settings
+                        {
+                            windowX = float.Parse(settingsNode.GetValue("windowX")),
+                            windowY = float.Parse(settingsNode.GetValue("windowY")),
+                            enableRangeSafety = bool.Parse(settingsNode.GetValue("enableRangeSafety")),
+                            terminatThrustOnArm = bool.Parse(settingsNode.GetValue("terminatThrustOnArm")),
+                            coastToApogeeBeforeAbort = bool.Parse(settingsNode.GetValue("coastToApogeeBeforeAbort")),
+                            abortOnArm = bool.Parse(settingsNode.GetValue("abortOnArm")),
+                            delay3secAfterAbort = bool.Parse(settingsNode.GetValue("delay3secAfterAbort")),
+                            destroyLaunchVehicle = bool.Parse(settingsNode.GetValue("destroyLaunchVehicle"))
+                        };
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("ConfigWindow.LoadSettings caught an exception trying to load RangeSafety.settings: " + e);
+            }
+            finally
+            {
+                if (result == null)
+                {
+                    result = new Settings
+                    {
+                        windowX = 500,
+                        windowY = 240,
+                        enableRangeSafety = true,
+                        terminatThrustOnArm = true,
+                        coastToApogeeBeforeAbort = true,
+                        abortOnArm = true,
+                        delay3secAfterAbort = true,
+                        destroyLaunchVehicle = true
+                    };
+                }
+            }
+            return result;
+        }
+
+        internal void SaveToFile()
+        {
+            try
+            {
+                var path = string.Format("{0}GameData/RangeSafety/RangeSafety.settings", KSPUtil.ApplicationRootPath);
+                var root = new ConfigNode("RangeSafety");
+                var settingsNode = root.AddNode(new ConfigNode("Settings"));
+                settingsNode.AddValue("windowX", windowX);
+                settingsNode.AddValue("windowY", windowY);
+                settingsNode.AddValue("enableRangeSafety", enableRangeSafety);
+                settingsNode.AddValue("terminatThrustOnArm", terminatThrustOnArm);
+                settingsNode.AddValue("coastToApogeeBeforeAbort", coastToApogeeBeforeAbort);
+                settingsNode.AddValue("abortOnArm", abortOnArm);
+                settingsNode.AddValue("delay3secAfterAbort", delay3secAfterAbort);
+                settingsNode.AddValue("destroyLaunchVehicle", destroyLaunchVehicle);
+
+                root.Save(path);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("ConfigWindow.SaveSettings caught an exception trying to save RangeSafety.settings: " + e);
+            }
+        }
+
     }
 }
