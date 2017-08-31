@@ -15,9 +15,6 @@ namespace RangeSafety
         internal IFlightCorridor flightCorridor = null;
         internal Settings settings = null;
 
-        private RangeState currentRangeState;
-        private RangeActions currentAction;
-
         protected void Awake()
         {
             try
@@ -38,10 +35,9 @@ namespace RangeSafety
             {
                 settings = Settings.InstantiateFromConfig();
                 flightCorridor = FlightCorridorBase.InstantiateFromConfig();
+                flightCorridor.SystemSettings = settings;
                 flightRange = new FlightRange();
                 flightRange.Initialize(this);
-
-                currentAction = RangeActions.WaitForLaunch;
             }
             catch (Exception ex)
             {

@@ -49,70 +49,71 @@ namespace RangeSafety
         {
             if (FlightGlobals.ActiveVessel == null) return null;
 
-            try
-            {
-                var path = string.Format("{0}GameData/RangeSafety/FlightCorridors.cfg", KSPUtil.ApplicationRootPath);
-                var corridorConfigs = ConfigNode.Load(path);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("ConfigLoader.Load caught an exception trying to load FlightCorridors.cfg: " + e);
-            }
-
+            ConfigNode rootNode = null;
             ConfigNode configNode = null;
             ConfigNode corridorsNode = null;
             ConfigNode tempNode = null;
             ConfigNode defaultNode = null;
             FlightCorridorBase instance = null;
 
-            if (corridorsNode.TryGetNode("RANGESAFETY", ref tempNode))
+            try
             {
-                if (tempNode.TryGetNode("FlightCorridors", ref corridorsNode))
+                var path = string.Format("{0}GameData/RangeSafety/FlightCorridors.cfg", KSPUtil.ApplicationRootPath);
+                rootNode = ConfigNode.Load(path);
+
+                if (rootNode.TryGetNode("RANGESAFETY", ref tempNode))
                 {
-                    for (int i = 0; i < corridorsNode.nodes.Count; i++)
+                    if (tempNode.TryGetNode("FlightCorridors", ref corridorsNode))
                     {
-                        ConfigNode testNode = corridorsNode.nodes[i];
-                        double lat = 0, lon = 0;
-                        if (!testNode.TryGetValue("latitude", ref lat))
+                        for (int i = 0; i < corridorsNode.nodes.Count; i++)
                         {
-                            break;
-                        }
-                        if (!testNode.TryGetValue("longitude", ref lon))
-                        {
-                            break;
-                        }
-                        var vesselCoords = new Coordinates(FlightGlobals.ActiveVessel.latitude, FlightGlobals.ActiveVessel.longitude);
-                        var padCoords = new Coordinates(lat, lon);
-                        if (vesselCoords.DistanceTo(padCoords) <= 1500)
-                        {
-                            configNode = testNode;
-                            break;
-                        }
-                        else if (testNode.HasValue("default"))
-                        {
-                            defaultNode = testNode;
+                            ConfigNode testNode = corridorsNode.nodes[i];
+                            double lat = 0, lon = 0;
+                            if (!testNode.TryGetValue("latitude", ref lat))
+                            {
+                                break;
+                            }
+                            if (!testNode.TryGetValue("longitude", ref lon))
+                            {
+                                break;
+                            }
+                            var vesselCoords = new Coordinates(FlightGlobals.ActiveVessel.latitude, FlightGlobals.ActiveVessel.longitude);
+                            var padCoords = new Coordinates(lat, lon);
+                            if (vesselCoords.DistanceTo(padCoords) <= 1500)
+                            {
+                                configNode = testNode;
+                                break;
+                            }
+                            else if (testNode.HasValue("default"))
+                            {
+                                defaultNode = testNode;
+                            }
                         }
                     }
                 }
-            }
 
-            if (configNode == null)
-            {
-                configNode = defaultNode;
+                if (configNode == null)
+                {
+                    configNode = defaultNode;
+                }
+                if (configNode == null)
+                {
+                    return null;
+                }
+                if (configNode.HasNode("Inclination"))
+                {
+                    instance = new FlightCorridorInclinations();
+                }
+                else
+                {
+                    instance = new FlightCorridorBase();
+                }
+                instance.ParseFromConfig(configNode);
             }
-            if (configNode == null)
+            catch (Exception e)
             {
-                return null;
+                Debug.LogError("FlightCorridorBase.InstantiateFromConfig() caught an exception trying to load FlightCorridors.cfg: " + e);
             }
-            if (configNode.HasNode("Inclination"))
-            {
-                instance = new FlightCorridorInclinations();
-            }
-            else
-            {
-                instance = new FlightCorridorBase();
-            }
-            instance.ParseFromConfig(configNode);
             return instance;
         }
 

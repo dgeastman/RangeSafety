@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RangeSafety
 {
@@ -32,7 +29,7 @@ namespace RangeSafety
 
         private RangeSafety rangeSafetyInstance;
         private double? abortMET;
-        private Queue<RangeActions> actionQueue;
+        private Queue<RangeActions> actionQueue = new Queue<RangeActions>();
 
         internal void Initialize(RangeSafety instance)
         {
@@ -54,10 +51,11 @@ namespace RangeSafety
                 var currentStatus = flightCorridor.CheckStatus(flightState);
                 if (previousStatus != currentStatus)
                 {
-                    if (((State == RangeState.Nominal) && (currentStatus & FlightStatus.AnyNominal) != 0))
+                    if (State == RangeState.Nominal)
                     {
-                        // there has been a status change and we are no longer nominal
-                        EnterArmedState(currentStatus);
+                        if ((currentStatus & FlightStatus.AnyViolation) != 0)
+                            // there has been a status change and we are no longer nominal
+                            EnterArmedState(currentStatus);
                     }
                     else if (State == RangeState.Armed)
                     {
@@ -72,7 +70,7 @@ namespace RangeSafety
 
         internal void ProcessActions()
         {
-            if (State == RangeState.Armed)
+            if (State == RangeState.Armed && actionQueue.Count > 0)
             {
                 var currentAction = actionQueue.Peek();
                 bool actionComplete = false;
@@ -137,6 +135,7 @@ namespace RangeSafety
         private void EnterArmedState(FlightStatus triggerStatus)
         {
             FlightLogger.eventLog.Add(string.Format("[{0}]: Range safety entered ARM state: {1}", KSPUtil.PrintTimeCompact((int)Math.Floor(FlightGlobals.ActiveVessel.missionTime), false), FlightCorridorBase.GetFlightStatusText(triggerStatus)));
+            State = RangeState.Armed;
 
             if (rangeSafetyInstance.settings.terminatThrustOnArm)
             {
@@ -153,6 +152,10 @@ namespace RangeSafety
             if (rangeSafetyInstance.settings.delay3secAfterAbort)
             {
                 actionQueue.Enqueue(RangeActions.WaitForAbortToClear);
+            }
+            if (rangeSafetyInstance.settings.destroyLaunchVehicle)
+            {
+                actionQueue.Enqueue(RangeActions.TerminateFlight);
             }
         }
 
@@ -200,7 +203,7 @@ namespace RangeSafety
         {
             if (FlightGlobals.ActiveVessel != null && abortMET.HasValue)
             {
-                return FlightGlobals.ActiveVessel.missionTime + 3 >= abortMET;
+                return FlightGlobals.ActiveVessel.missionTime >= abortMET + 3;
             }
             return true;
         }
