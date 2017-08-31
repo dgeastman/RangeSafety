@@ -9,7 +9,8 @@ namespace RangeSafety
         Nominal = 1,
         Armed = 2,
         Destroyed = 3,
-        Exempt = 4
+        Exempt = 4,
+        Safe = 5
     }
 
     internal enum RangeActions
@@ -115,6 +116,9 @@ namespace RangeSafety
                 case RangeState.Destroyed:
                     state = "DESTROYED";
                     break;
+                case RangeState.Safe:
+                    state = "SAFE";
+                    break;
             }
             description = FlightCorridorBase.GetFlightStatusText(corridorState);
             return string.Format("{0}: {1}", state, description);
@@ -137,7 +141,7 @@ namespace RangeSafety
             FlightLogger.eventLog.Add(string.Format("[{0}]: Range safety entered ARM state: {1}", KSPUtil.PrintTimeCompact((int)Math.Floor(FlightGlobals.ActiveVessel.missionTime), false), FlightCorridorBase.GetFlightStatusText(triggerStatus)));
             State = RangeState.Armed;
 
-            if (rangeSafetyInstance.settings.terminatThrustOnArm)
+            if (rangeSafetyInstance.settings.terminateThrustOnArm)
             {
                 actionQueue.Enqueue(RangeActions.TerminateThrust);
             }

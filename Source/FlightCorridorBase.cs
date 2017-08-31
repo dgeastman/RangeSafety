@@ -7,16 +7,20 @@ namespace RangeSafety
     internal enum FlightStatus : uint
     {
         Nominal = 0x000,
+
         Prelaunch = 0x001,
-        SafeMass = 0x002,
-        SafeSpeed = 0x004,
-        SafeRange = 0x008,
-        NominalPadExclusion = 0x010,
-        NominalInCorridor = 0x020,
-        AnyNominal = 0x03F,            // includes all the above nominal conditions
+        NominalPadExclusion = 0x002,
+        NominalInCorridor = 0x004,
+        AnyNominal = 0x007,            // includes all the above nominal conditions
+
+        SafeMass = 0x010,
+        SafeSpeed = 0x020,
+        SafeRange = 0x040,
+        AnySafe = 0x0370,               // includes all the above safe conditions
 
         CorridorViolation = 0x040,
         AnyViolation = 0x040,           // includes all the above violation conditions
+
         Disarmed = 0x100
     }
 
@@ -127,7 +131,7 @@ namespace RangeSafety
                 return result;
             }
 
-            if (flightState == null)
+            if (flightState == null || FlightGlobals.ActiveVessel.situation == Vessel.Situations.PRELAUNCH)
             {
                 result = FlightStatus.Prelaunch;
                 Status = result;
@@ -247,15 +251,15 @@ namespace RangeSafety
             }
             else if ((status & FlightStatus.SafeMass) == FlightStatus.SafeMass)
             {
-                description = "Vessel reached safe mass";
+                description = "Below safe mass";
             }
             else if ((status & FlightStatus.SafeRange) == FlightStatus.SafeRange)
             {
-                description = "Vessel reached safe range";
+                description = "Beyond safe range";
             }
             else if ((status & FlightStatus.SafeSpeed) == FlightStatus.SafeSpeed)
             {
-                description = "Vessel reached safe speed";
+                description = "Above safe speed";
             }
             else if ((status & FlightStatus.NominalPadExclusion) == FlightStatus.NominalPadExclusion)
             {

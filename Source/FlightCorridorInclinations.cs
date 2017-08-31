@@ -4,16 +4,16 @@ namespace RangeSafety
 {
     internal class FlightCorridorInclinations : FlightCorridorBase
     {
-        public EditableDouble MinimumInclination { get; set; }
-        public EditableDouble MaximumInclination { get; set; }
+        public EditableDouble MinimumAzimuth { get; set; }
+        public EditableDouble MaximumAzimuth { get; set; }
         public EditableDouble MinimumVerticalInclination { get; set; }
 
         public override void DrawEditor()
         {
             base.DrawEditor();
 
-            GUIUtils.SimpleTextBox("Minimum Inclination", MinimumInclination, "°");
-            GUIUtils.SimpleTextBox("Maximum Inclination", MaximumInclination, "°");
+            GUIUtils.SimpleTextBox("Minimum Azimuth", MinimumAzimuth, "°");
+            GUIUtils.SimpleTextBox("Maximum Azimuth", MaximumAzimuth, "°");
             GUIUtils.SimpleTextBox("Minimum Climb", MinimumVerticalInclination, "°");
         }
 
@@ -23,8 +23,13 @@ namespace RangeSafety
 
             var vesselCoords = new Coordinates(flightState.Lattitude, flightState.Longitude);
 
+            var distance = PadCoordinates.DistanceTo(vesselCoords);
             var bearing = PadCoordinates.BearingTo(vesselCoords);
-            if (bearing > MaximumInclination.val || bearing < MinimumInclination.val)
+            var vertical = Math.Atan(distance / flightState.VesselHeightAboveSurface) * (180 / Math.PI);
+
+            if ((MaximumAzimuth.val > MinimumAzimuth.val && bearing > MaximumAzimuth.val || bearing < MinimumAzimuth.val)
+             || (MaximumAzimuth.val < MinimumAzimuth.val && bearing < MaximumAzimuth.val && bearing > MinimumAzimuth.val)
+             || (vertical < MinimumVerticalInclination.val))
             {
                 result = FlightStatus.CorridorViolation;
             }
@@ -38,13 +43,13 @@ namespace RangeSafety
             double valueDouble = 0;
             var inclinationNode = configNode.GetNode("Inclination");
 
-            if (inclinationNode.TryGetValue("MinimumInclination", ref valueDouble))
+            if (inclinationNode.TryGetValue("MinimumAzimuth", ref valueDouble))
             {
-                this.MinimumInclination = valueDouble;
+                this.MinimumAzimuth = valueDouble;
             }
-            if (inclinationNode.TryGetValue("MaximumInclination", ref valueDouble))
+            if (inclinationNode.TryGetValue("MaximumAzimuth", ref valueDouble))
             {
-                this.MaximumInclination = valueDouble;
+                this.MaximumAzimuth = valueDouble;
             }
             if (inclinationNode.TryGetValue("MinimumVerticalInclination", ref valueDouble))
             {

@@ -85,7 +85,7 @@ namespace RangeSafety
         private void ArmActionsTab()
         {
             GUILayout.BeginHorizontal();
-            rangeSafetyInstance.settings.terminatThrustOnArm = GUILayout.Toggle(rangeSafetyInstance.settings.terminatThrustOnArm, "Terminate Thrust");
+            rangeSafetyInstance.settings.terminateThrustOnArm = GUILayout.Toggle(rangeSafetyInstance.settings.terminateThrustOnArm, "Terminate Thrust");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();

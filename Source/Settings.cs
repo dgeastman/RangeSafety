@@ -5,7 +5,8 @@ namespace RangeSafety
 {
     internal class Settings
     {
-        internal bool terminatThrustOnArm;
+        internal bool terminateThrustOnArm;
+        internal bool destroySolids;
         internal bool coastToApogeeBeforeAbort;
         internal bool abortOnArm;
         internal bool delay3secAfterAbort;
@@ -31,7 +32,8 @@ namespace RangeSafety
                             windowX = float.Parse(settingsNode.GetValue("windowX")),
                             windowY = float.Parse(settingsNode.GetValue("windowY")),
                             enableRangeSafety = bool.Parse(settingsNode.GetValue("enableRangeSafety")),
-                            terminatThrustOnArm = bool.Parse(settingsNode.GetValue("terminatThrustOnArm")),
+                            terminateThrustOnArm = bool.Parse(settingsNode.GetValue("terminateThrustOnArm")),
+                            destroySolids = bool.Parse(settingsNode.GetValue("destroySolids")),
                             coastToApogeeBeforeAbort = bool.Parse(settingsNode.GetValue("coastToApogeeBeforeAbort")),
                             abortOnArm = bool.Parse(settingsNode.GetValue("abortOnArm")),
                             delay3secAfterAbort = bool.Parse(settingsNode.GetValue("delay3secAfterAbort")),
@@ -53,7 +55,8 @@ namespace RangeSafety
                         windowX = 500,
                         windowY = 240,
                         enableRangeSafety = true,
-                        terminatThrustOnArm = true,
+                        terminateThrustOnArm = true,
+                        destroySolids = true,
                         coastToApogeeBeforeAbort = true,
                         abortOnArm = true,
                         delay3secAfterAbort = true,
@@ -74,7 +77,7 @@ namespace RangeSafety
                 settingsNode.AddValue("windowX", windowX);
                 settingsNode.AddValue("windowY", windowY);
                 settingsNode.AddValue("enableRangeSafety", enableRangeSafety);
-                settingsNode.AddValue("terminatThrustOnArm", terminatThrustOnArm);
+                settingsNode.AddValue("terminateThrustOnArm", terminateThrustOnArm);
                 settingsNode.AddValue("coastToApogeeBeforeAbort", coastToApogeeBeforeAbort);
                 settingsNode.AddValue("abortOnArm", abortOnArm);
                 settingsNode.AddValue("delay3secAfterAbort", delay3secAfterAbort);
