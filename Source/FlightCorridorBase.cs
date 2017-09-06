@@ -18,8 +18,8 @@ namespace RangeSafety
         SafeRange = 0x040,
         AnySafe = 0x0370,               // includes all the above safe conditions
 
-        CorridorViolation = 0x040,
-        AnyViolation = 0x040,           // includes all the above violation conditions
+        CorridorViolation = 0x080,
+        AnyViolation = 0x080,           // includes all the above violation conditions
 
         Disarmed = 0x100
     }

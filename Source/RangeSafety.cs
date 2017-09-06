@@ -21,6 +21,8 @@ namespace RangeSafety
             {
                 flightSceneWindow = new FlightSceneWindow(this);
                 GameEvents.onGUIApplicationLauncherReady.Add(this.OnGuiAppLauncherReady);
+                GameEvents.onHideUI.Add(this.HideWindow);
+                GameEvents.onShowUI.Add(this.ShowWindow);
             }
             catch (Exception ex)
             {

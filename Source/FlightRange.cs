@@ -15,9 +15,8 @@ namespace RangeSafety
 
     internal enum RangeActions
     {
-        WaitForLaunch = 0,
-        MonitorFlight,
         TerminateThrust,
+        DestroySolids,
         CoastToApogee,
         ExecuteAbort,
         WaitForAbortToClear,
@@ -52,7 +51,11 @@ namespace RangeSafety
                 var currentStatus = flightCorridor.CheckStatus(flightState);
                 if (previousStatus != currentStatus)
                 {
-                    if (State == RangeState.Nominal)
+                    if ((currentStatus & FlightStatus.AnySafe) != 0)
+                    {
+                        EnterSafeState(currentStatus);
+                    }
+                    else if (State == RangeState.Nominal)
                     {
                         if ((currentStatus & FlightStatus.AnyViolation) != 0)
                             // there has been a status change and we are no longer nominal
@@ -77,20 +80,23 @@ namespace RangeSafety
                 bool actionComplete = false;
                 switch (currentAction)
                 {
+                    case RangeActions.TerminateThrust:
+                        actionComplete = ExecuteDisableThrustAction();
+                        break;
+                    case RangeActions.DestroySolids:
+                        actionComplete = ExecuteDestroySolidsAction();
+                        break;
                     case RangeActions.CoastToApogee:
                         actionComplete = ExecuteCoastToApogeeAction();
                         break;
                     case RangeActions.ExecuteAbort:
                         actionComplete = ExecuteAbortAction();
                         break;
-                    case RangeActions.TerminateFlight:
-                        actionComplete = ExecuteDestroyAction();
-                        break;
-                    case RangeActions.TerminateThrust:
-                        actionComplete = ExecuteDisableThrustAction();
-                        break;
                     case RangeActions.WaitForAbortToClear:
                         actionComplete = ExecuteWaitForAbortToClearAction();
+                        break;
+                    case RangeActions.TerminateFlight:
+                        actionComplete = ExecuteDestroyAction();
                         break;
                 }
                 if (actionComplete)
@@ -145,6 +151,10 @@ namespace RangeSafety
             {
                 actionQueue.Enqueue(RangeActions.TerminateThrust);
             }
+            if (rangeSafetyInstance.settings.destroySolids)
+            {
+                actionQueue.Enqueue(RangeActions.DestroySolids);
+            }
             if (rangeSafetyInstance.settings.coastToApogeeBeforeAbort)
             {
                 actionQueue.Enqueue(RangeActions.CoastToApogee);
@@ -163,12 +173,40 @@ namespace RangeSafety
             }
         }
 
+        private void EnterSafeState(FlightStatus triggerStatus)
+        {
+            FlightLogger.eventLog.Add(string.Format("[{0}]: Range safety entered SAFE state: {1}", KSPUtil.PrintTimeCompact((int)Math.Floor(FlightGlobals.ActiveVessel.missionTime), false), FlightCorridorBase.GetFlightStatusText(triggerStatus)));
+            State = RangeState.Safe;
+        }
+
         private bool ExecuteDisableThrustAction()
         {
             if (FlightGlobals.ActiveVessel != null)
             {
                 FlightGlobals.ActiveVessel.ctrlState.mainThrottle = 0;
                 FlightInputHandler.state.mainThrottle = 0; //so that the on-screen throttle gauge reflects the autopilot throttle
+            }
+            return true;
+        }
+
+        private bool ExecuteDestroySolidsAction()
+        {
+            var partlist = new List<Part>();
+            foreach (var part in FlightGlobals.ActiveVessel.Parts)
+            {
+                if (part.Resources.Contains("SolidFuel"))
+                {
+                    var moduleEngine = part.FindModuleImplementing<ModuleEngines>();
+                    if (moduleEngine != null && moduleEngine.EngineIgnited)
+                    {
+                        partlist.Add(part);
+                    }
+                }
+            }
+
+            foreach (var part in partlist)
+            {
+                part.Die();
             }
             return true;
         }

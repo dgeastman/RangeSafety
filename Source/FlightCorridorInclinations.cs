@@ -25,11 +25,9 @@ namespace RangeSafety
 
             var distance = PadCoordinates.DistanceTo(vesselCoords);
             var bearing = PadCoordinates.BearingTo(vesselCoords);
-            var vertical = Math.Atan(distance / flightState.VesselHeightAboveSurface) * (180 / Math.PI);
 
             if ((MaximumAzimuth.val > MinimumAzimuth.val && bearing > MaximumAzimuth.val || bearing < MinimumAzimuth.val)
-             || (MaximumAzimuth.val < MinimumAzimuth.val && bearing < MaximumAzimuth.val && bearing > MinimumAzimuth.val)
-             || (vertical < MinimumVerticalInclination.val))
+             || (MaximumAzimuth.val < MinimumAzimuth.val && bearing < MaximumAzimuth.val && bearing > MinimumAzimuth.val))
             {
                 result = FlightStatus.CorridorViolation;
             }

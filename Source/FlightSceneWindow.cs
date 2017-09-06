@@ -89,6 +89,10 @@ namespace RangeSafety
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
+            rangeSafetyInstance.settings.destroySolids = GUILayout.Toggle(rangeSafetyInstance.settings.destroySolids, "Destroy Solids");
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
             rangeSafetyInstance.settings.abortOnArm = GUILayout.Toggle(rangeSafetyInstance.settings.coastToApogeeBeforeAbort, "Coast to Apogee");
             GUILayout.EndHorizontal();
 

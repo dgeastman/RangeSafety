@@ -78,6 +78,7 @@ namespace RangeSafety
                 settingsNode.AddValue("windowY", windowY);
                 settingsNode.AddValue("enableRangeSafety", enableRangeSafety);
                 settingsNode.AddValue("terminateThrustOnArm", terminateThrustOnArm);
+                settingsNode.AddValue("destroySolids", destroySolids);
                 settingsNode.AddValue("coastToApogeeBeforeAbort", coastToApogeeBeforeAbort);
                 settingsNode.AddValue("abortOnArm", abortOnArm);
                 settingsNode.AddValue("delay3secAfterAbort", delay3secAfterAbort);
