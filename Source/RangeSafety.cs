@@ -49,7 +49,10 @@ namespace RangeSafety
 
         private void ShowWindow()
         {
-            guiEnabled = true;
+            if (GUI.enabled)
+            {
+                guiEnabled = true;
+            }
         }
 
         private void HideWindow()

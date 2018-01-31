@@ -22,6 +22,9 @@ namespace RangeSafety
 
         public void OnGUI()
         {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+
             if (rangeSafetyInstance.settings != null)
             {
                 windowPos.x = rangeSafetyInstance.settings.windowX;
